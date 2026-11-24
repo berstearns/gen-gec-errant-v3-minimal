@@ -2,7 +2,7 @@
 # WHAT: Bootstrap and execute a pinned, synthetic CPU run from an anonymous HTTPS clone.
 # WHY: A fresh-user run must not inherit the developer's checkout, data, models or config.
 # INPUTS: bootstrap [--remote HTTPS_GIT_URL --sha FULL_SHA] [--base ABS_PATH]
-#         execute --base ABS_PATH; check --base ABS_PATH;
+#         execute --base ABS_PATH; check --base ABS_PATH; retire --base ABS_PATH;
 #         selfcheck (no args, development gate).
 #         Without --remote/--sha, bootstrap derives both from this clean checkout.
 #         No environment variable supplies run parameters or credentials.
@@ -22,6 +22,8 @@
 #     # read-only launch-contract gate
 #   python tooling/AUTO-user-run.py execute --base /home/user/runs/gge-cpu-test
 #     # one-shot build and CPU experiment in the named pane
+#   python tooling/AUTO-user-run.py retire --base /home/user/runs/gge-cpu-test
+#     # retire a completed user session before a separate fresh run
 #   python tooling/AUTO-user-run.py selfcheck
 #     # lint, boundary and fixture tests in the current checkout
 #   python tooling/AUTO-user-run.py bootstrap --remote /local/repo --sha FULL_SHA
@@ -219,7 +221,7 @@ def bootstrap(args):
     env = os.environ.copy()
     env["GGE_USER_RUN_BASE"] = str(base)
     command(("tmuxinator", "start", "-p", template, "--no-attach"), env=env)
-    panes = command(("tmux", "list-panes", "-t", f"{USER_SESSION}:run", "-F", "#{{pane_title}}"))
+    panes = command(("tmux", "list-panes", "-t", f"{USER_SESSION}:run", "-F", "#{pane_title}"))
     if "gge1" not in panes.splitlines():
         raise ContractError(f"named user pane did not come up: {panes}")
     print(f"USER_RUN_STARTED base={base} sha={actual} session={USER_SESSION} pane=gge1")
@@ -298,6 +300,15 @@ def execute(base):
         receipt.write_text(json.dumps(result, sort_keys=True, indent=2) + "\n", encoding="utf-8")
 
 
+def retire(base):
+    check(base)
+    receipt = base / "data/evidence/verdict.json"
+    if not receipt.is_file() or json.loads(receipt.read_text(encoding="utf-8")).get("verdict") != "PASS":
+        raise ContractError("only a completed PASS user session can be retired")
+    command(("tmux", "kill-session", "-t", USER_SESSION))
+    print(f"USER_SESSION_RETIRED session={USER_SESSION} evidence={receipt}")
+
+
 def selfcheck():
     root = Path(__file__).resolve().parents[1]
     command(("ruff", "check", "code", "tooling"), cwd=root)
@@ -319,7 +330,7 @@ def main(argv=None):
     boot.add_argument("--remote")
     boot.add_argument("--sha")
     boot.add_argument("--base")
-    for name in ("check", "execute"):
+    for name in ("check", "execute", "retire"):
         part = sub.add_parser(name)
         part.add_argument("--base", required=True)
     sub.add_parser("selfcheck")
@@ -331,6 +342,8 @@ def main(argv=None):
             check(absolute_base(args.base))
         elif args.mode == "selfcheck":
             selfcheck()
+        elif args.mode == "retire":
+            retire(absolute_base(args.base))
         else:
             execute(absolute_base(args.base))
     except (ContractError, ValueError) as exc:
