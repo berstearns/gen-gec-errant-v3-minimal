@@ -28,9 +28,3 @@ def check():
                         failures.append(f"{file}:{node.lineno}: {name}")
     return failures
 
-
-if __name__ == "__main__":
-    errors = check()
-    if errors:
-        raise SystemExit("\n".join(errors))
-    print("v3 stage import boundaries: PASS")

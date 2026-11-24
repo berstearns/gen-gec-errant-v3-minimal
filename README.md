@@ -1,42 +1,65 @@
 # Minimal generation → GEC → edit annotation
 
-This is an independent, CPU-first repository. Its runnable code is in `code/`:
-`contracts`, `generation`, `gec`, `errant`, and optional `composition` are separate
-Python distributions. `tooling/` holds tests and public fixtures. `data/cfgs/`
-contains configuration, `data/runs/` receives run output, `data/artifacts/` is for
-local model assets, and `build/` receives wheels. Runs, assets and wheels are ignored.
+This repository contains five small Python distributions under `code/`: a
+versioned JSONL contract, three independent stages, and optional composition.
+`tooling/` contains the reproducible CPU runner and public tests. Repository
+`data/` and `build/` are placeholders for local development; the fresh-user run
+writes only under its separate `~/runs/.../data/` and `configs/` directories.
 
-## Run the CPU example
+## Fresh user CPU run
 
-```sh
-python -m venv .venv
-. .venv/bin/activate
-pip install ./code/contracts ./code/generation ./code/gec ./code/errant ./code/composition
-mkdir -p data/runs/demo
-gge-pipeline --input tooling/fixtures/input.jsonl --output data/runs/demo/annotated.jsonl
-cat data/runs/demo/annotated.jsonl
-```
+Requirements: GNU/Linux, Python 3.10+, Git, tmux, tmuxinator, the `pane-name`
+shell function, and network access to this
+public GitHub repository and PyPI. No GPU, credentials, private dataset, model
+weights, or remote compute service is used. The run intentionally uses a tiny
+synthetic input and deterministic fixture providers.
 
-Stage commands can also run separately:
+Get the published source, then run the tracked bootstrap:
 
 ```sh
-gge-generate --input tooling/fixtures/input.jsonl --output data/runs/demo/generated.jsonl --provider fixture
-gge-correct --input data/runs/demo/generated.jsonl --output data/runs/demo/corrected.jsonl --provider identity
-gge-annotate --input data/runs/demo/corrected.jsonl --output data/runs/demo/annotated.jsonl --provider token-diff
+git clone https://github.com/berstearns/gen-gec-errant-v3-minimal.git gge-cpu-bootstrap
+cd gge-cpu-bootstrap
+python tooling/AUTO-user-run.py bootstrap
 ```
 
-Each stage installs alone with `./code/contracts` and has no heavy runtime dependency.
-The fixture generator copies prompts, the identity corrector copies text, and the
-token diff reports approximate edits. These commands verify the CPU file pipeline;
-they do not run research models or produce genuine ERRANT labels. Python providers
-can be injected through the public stage APIs. No model weights or private data are
-included.
+The tracked program derives `origin` and the current clean commit, checks that
+the same SHA is anonymously advertised on the public `main` branch, creates a
+fresh `~/runs/gge-cpu-<UTC timestamp>/` with exactly `repo/`, `data/`, and
+`configs/`, clones that public SHA, and atomically generates a mode-0600
+`configs/.runrc`. It prints the new base and session switch command.
+The tmuxinator session `gge--gen-gec-err-v3-user`, window `run`, pane `gge1`
+runs `AUTO-user-run.py execute` from the fresh clone. Switch between it and
+the dev session with `tmux switch-client -t gge--gen-gec-err-v3-user` and
+`tmux switch-client -t gge--gen-gec-err-v2` from inside tmux.
+The program creates synthetic input in `data/`, builds five wheels from the
+clone, installs them in `data/venv`, runs all three stage CLIs plus composition,
+compares field-level output, and writes `data/evidence/verdict.json` and
+`commands.log`. A failed step produces a FAIL receipt; it does not retry using
+local files or download any dataset or model.
 
-## Check and build
+For an explicit fresh root, use:
 
 ```sh
-./tooling/check.sh
-./tooling/build-wheels.sh
+python tooling/AUTO-user-run.py bootstrap --base /absolute/path/under/runs
 ```
 
-A frozen native binary is not provided; the console scripts require Python 3.10+.
+The root must not already exist. `check --base` is read-only; `execute --base`
+is one-shot and normally runs inside tmux. All paths in `.runrc` are derived
+from the run root and cloned SHA. There are no secrets to autofill for this CPU
+experiment. The program refuses local clone URLs and relative run roots.
+
+## Development gate
+
+```sh
+python tooling/AUTO-user-run.py selfcheck
+```
+
+The fixture generator copies prompts, the identity corrector copies text, and
+the token diff reports approximate edits. Passing the CPU run proves packaging,
+stage interfaces, and file composition. It does not prove model generation,
+grammar correction, or genuine ERRANT classification. Python providers can be
+injected through the public stage APIs. A native binary is not provided.
+
+See [the run plan](tooling/USER-RUN-PLAN.md) for failure branches and the command
+contract. The fresh-user run is complete only when its pinned-SHA evidence
+receipt and an independent tester verdict agree.

@@ -13,3 +13,4 @@ data/runs/*
 data/artifacts/*
 !data/artifacts/.gitkeep
 code/*/build/
+**/.runrc

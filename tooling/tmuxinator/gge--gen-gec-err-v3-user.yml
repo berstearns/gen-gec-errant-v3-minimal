@@ -1,0 +1,12 @@
+# DATE: 2026-11-24
+# Fresh public-clone CPU experiment. Start only through AUTO-user-run.py bootstrap.
+# Usage: tmuxinator start -p tooling/tmuxinator/gge--gen-gec-err-v3-user.yml --no-attach
+# Layout: run — named experiment pane, rooted in the pinned public clone.
+name: gge--gen-gec-err-v3-user
+root: <%= ENV.fetch('GGE_USER_RUN_BASE') %>/repo
+startup_window: run
+
+windows:
+  - run:
+      panes:
+        - pane-name gge1 ; python tooling/AUTO-user-run.py execute --base <%= ENV.fetch('GGE_USER_RUN_BASE') %>
