@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gge-errant"
+version = "0.1.0"
+requires-python = ">=3.10"
+description = "Standalone GGE edit annotation stage"
+dependencies = ["gge-contracts==0.1.0"]
+
+[project.scripts]
+gge-annotate = "gge_errant.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

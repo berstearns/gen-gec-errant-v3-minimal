@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gge-gec"
+version = "0.1.0"
+description = "GGE grammar correction stage"
+requires-python = ">=3.10"
+dependencies = ["gge-contracts==0.1.0"]
+
+[project.scripts]
+gge-correct = "gge_gec.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

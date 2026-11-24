@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "gge-composition"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["gge-generation==0.1.0", "gge-gec==0.1.0", "gge-errant==0.1.0"]
+[project.scripts]
+gge-pipeline = "gge_composition:main"
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gge-generation"
+version = "0.1.0"
+requires-python = ">=3.10"
+description = "Fixture generation stage for versioned GGE JSONL rows"
+dependencies = ["gge-contracts==0.1.0"]
+
+[project.scripts]
+gge-generate = "gge_generation:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
