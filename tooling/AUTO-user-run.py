@@ -42,6 +42,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import venv
 from datetime import datetime, timezone
 from pathlib import Path
@@ -221,8 +222,12 @@ def bootstrap(args):
     env = os.environ.copy()
     env["GGE_USER_RUN_BASE"] = str(base)
     command(("tmuxinator", "start", "-p", template, "--no-attach"), env=env)
-    panes = command(("tmux", "list-panes", "-t", f"{USER_SESSION}:run", "-F", "#{pane_title}"))
-    if "gge1" not in panes.splitlines():
+    for _ in range(20):
+        panes = command(("tmux", "list-panes", "-t", f"{USER_SESSION}:run", "-F", "#{pane_title}"))
+        if "gge1" in panes.splitlines():
+            break
+        time.sleep(0.25)
+    else:
         raise ContractError(f"named user pane did not come up: {panes}")
     print(f"USER_RUN_STARTED base={base} sha={actual} session={USER_SESSION} pane=gge1")
     print(f"SWITCH tmux switch-client -t {USER_SESSION}")
