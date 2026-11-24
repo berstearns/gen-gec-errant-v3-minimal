@@ -12,3 +12,4 @@ data/runs/*
 !data/runs/.gitkeep
 data/artifacts/*
 !data/artifacts/.gitkeep
+code/*/build/
